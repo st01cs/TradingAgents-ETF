@@ -10,6 +10,7 @@ This module provides interfaces to Akshare library for retrieving:
 
 import logging
 import akshare as ak
+import pandas as pd
 from typing import Optional
 from datetime import datetime
 
@@ -190,45 +191,109 @@ def get_akshare_stock(
 
 def get_akshare_indicators(
     symbol: str,
-    period: str = "daily",
-    indicator_names: str = "macd,rsi"
+    indicator: str,
+    curr_date: str,
+    look_back_days: int = 30
 ) -> str:
     """
-    Get technical indicators using hybrid approach.
+    Calculate technical indicators for Chinese stocks using hybrid approach.
 
-    Strategy: Try Akshare's built-in indicators first, fallback to stockstats calculation.
+    Strategy:
+    1. Fetch OHLCV data using get_akshare_stock()
+    2. Calculate indicators using stockstats library
+    3. Return formatted text summary with CSV data
 
     Args:
-        symbol: Stock symbol
-        period: Time period
-        indicator_names: Comma-separated list of indicator names
+        symbol: Stock symbol (6-digit code or akshare format)
+        indicator: Technical indicator name(s) (comma-separated for multiple)
+        curr_date: Current date (YYYY-MM-DD) for determining date range
+        look_back_days: Number of days to look back from curr_date (default: 30)
 
     Returns:
-        Text summary of technical indicators
+        Text summary with calculated indicators in CSV format
 
     Raises:
-        AkshareDataError: If indicator calculation fails
+        AkshareCodeError: If stock code is invalid
+        AkshareDataError: If data retrieval or calculation fails
+
+    Example:
+        >>> get_akshare_indicators("600000", "rsi,macd", "2024-01-15", 30)
+        '# Technical Indicators for sh600000\\n# Date: 2024-01-15\\n...'
     """
     try:
-        logger.info(f"Akshare: Fetching indicators for {symbol}: {indicator_names}")
-
-        akshare_symbol = convert_to_akshare_code(symbol)
-
-        # Try to get stock data with spot data (includes some indicators)
-        # Note: This is a placeholder. Full implementation would use stockstats
-        # for comprehensive indicator calculation.
-
-        # For now, return a message indicating indicators would be calculated
-        return (
-            f"# Technical Indicators for {akshare_symbol}\n"
-            f"# Requested indicators: {indicator_names}\n"
-            f"# Note: Full indicator calculation implementation pending\n"
-            f"# This will use stockstats library for calculation\n"
+        from tradingagents.dataflows.indicators.calculator import (
+            IndicatorCalculator
         )
 
+        logger.info(
+            f"Akshare: Calculating indicators for {symbol}: {indicator}, "
+            f"lookback={look_back_days} days"
+        )
+
+        # Parse indicator list
+        indicator_list = IndicatorCalculator.parse_indicator_list(indicator)
+        if not indicator_list:
+            raise AkshareDataError("No valid indicators specified")
+
+        logger.debug(f"Parsed indicators: {indicator_list}")
+
+        # Calculate start date
+        from datetime import datetime, timedelta
+        curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
+        start_dt = curr_dt - timedelta(days=look_back_days)
+        start_date = start_dt.strftime("%Y-%m-%d")
+
+        # Step 1: Fetch OHLCV data
+        logger.debug(f"Fetching stock data from {start_date} to {curr_date}")
+        stock_data_csv = get_akshare_stock(
+            symbol=symbol,
+            period="daily",
+            start_date=start_date,
+            end_date=curr_date,
+            adjust="qfq"  # Use forward-adjusted prices
+        )
+
+        # Parse CSV data to DataFrame
+        import io
+        df = pd.read_csv(io.StringIO(stock_data_csv))
+
+        # Remove comment lines (starting with #)
+        df = df[~df['Date'].astype(str).str.startswith('#')]
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.sort_values('Date', ascending=True)
+
+        logger.info(f"Retrieved {len(df)} days of price data")
+
+        # Step 2: Calculate indicators
+        logger.debug("Calculating technical indicators...")
+        summary_df = IndicatorCalculator.calculate(df, indicator_list)
+
+        if summary_df.empty:
+            return (
+                f"# Technical Indicators for {symbol}\n"
+                f"# Date: {curr_date}\n"
+                f"# No indicators could be calculated\n"
+                f"# Requested: {indicator}\n"
+            )
+
+        # Step 3: Format results
+        result = IndicatorCalculator.format_as_text(
+            symbol=symbol,
+            summary_df=summary_df,
+            curr_date=curr_date,
+            look_back_days=look_back_days
+        )
+
+        logger.info(
+            f"Akshare: Calculated {len(summary_df.columns)} indicators for {symbol}"
+        )
+        return result
+
+    except AkshareCodeError:
+        raise
     except Exception as e:
         logger.error(f"Akshare indicators failed for {symbol}: {e}")
-        raise AkshareDataError(f"Failed to retrieve indicators: {e}")
+        raise AkshareDataError(f"Failed to calculate indicators: {e}")
 
 
 # ============================================================================
