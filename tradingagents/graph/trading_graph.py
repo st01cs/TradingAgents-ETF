@@ -82,7 +82,7 @@ class TradingAgentsGraph:
         elif self.config["llm_provider"].lower() == "google":
             self.deep_thinking_llm = ChatGoogleGenerativeAI(model=self.config["deep_think_llm"])
             self.quick_thinking_llm = ChatGoogleGenerativeAI(model=self.config["quick_think_llm"])
-        elif self.config["llm_provider"].lower() == "deepchat":
+        elif self.config["llm_provider"].lower() == "deepseek":
             # DeepSeek API key from environment
             deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
             if not deepseek_api_key:

@@ -8,8 +8,10 @@ load_dotenv()
 
 # Create a custom config
 config = DEFAULT_CONFIG.copy()
-config["deep_think_llm"] = "gpt-4o-mini"  # Use a different model
-config["quick_think_llm"] = "gpt-4o-mini"  # Use a different model
+config["llm_provider"] = "openai" 
+config["backend_url"] = "https://api.siliconflow.cn/v1"
+config["deep_think_llm"] = "deepseek-ai/DeepSeek-V3.2"  # Use a different model
+config["quick_think_llm"] = "deepseek-ai/DeepSeek-V3.2"  # Use a different model
 config["max_debate_rounds"] = 1  # Increase debate rounds
 
 # Configure data vendors (default uses yfinance and alpha_vantage)

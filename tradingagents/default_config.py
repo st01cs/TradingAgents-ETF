@@ -3,26 +3,26 @@ import os
 DEFAULT_CONFIG = {
     "project_dir": os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
     "results_dir": os.getenv("TRADINGAGENTS_RESULTS_DIR", "./results"),
-    "data_dir": "/Users/yluo/Documents/Code/ScAI/FR1-data",
+    "data_dir": "Data/ScAI/FR1-data",
     "data_cache_dir": os.path.join(
         os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
         "dataflows/data_cache",
     ),
     # LLM settings
-    "llm_provider": "openai",
-    "deep_think_llm": "o4-mini",
-    "quick_think_llm": "gpt-4o-mini",
-    "backend_url": "https://api.openai.com/v1",
+    # "llm_provider": "openai",
+    # "deep_think_llm": "o4-mini",
+    # "quick_think_llm": "gpt-4o-mini",
+    # "backend_url": "https://api.openai.com/v1",
     # DeepSeek LLM settings (alternative provider)
     # To use DeepSeek, set llm_provider to "deepchat" and provide DEEPSEEK_API_KEY in environment
-    # "llm_provider": "deepchat",
-    # "deep_think_llm": "deepseek-reasoner",
-    # "quick_think_llm": "deepseek-chat",
-    # "backend_url": "https://api.deepseek.com",  # Optional, uses default if not specified
+    "llm_provider": "deepseek",
+    "deep_think_llm": "deepseek-reasoner",
+    "quick_think_llm": "deepseek-chat",
+    "backend_url": "https://api.deepseek.com",  # Optional, uses default if not specified
     # Embedding settings for memory system
     "embedding": {
-        "endpoint": "https://api.openai.com/v1",  # OpenAI-compatible API endpoint
-        "model": "text-embedding-3-small",         # Embedding model name
+        "endpoint": "https://api.siliconflow.cn/v1",  # OpenAI-compatible API endpoint
+        "model": "Qwen/Qwen3-Embedding-0.6B",         # Embedding model name
         "api_key": None,                           # Users must override this with their API key
     },
     # Debate and discussion settings
