@@ -127,7 +127,59 @@ cp .env.example .env
 # Edit .env with your actual API keys
 ```
 
-**Note:** We are happy to partner with Alpha Vantage to provide robust API support for TradingAgents. You can get a free AlphaVantage API [here](https://www.alphavantage.co/support/#api-key), TradingAgents-sourced requests also have increased rate limits to 60 requests per minute with no daily limits. Typically the quota is sufficient for performing complex tasks with TradingAgents thanks to Alpha Vantage’s open-source support program. If you prefer to use OpenAI for these data sources instead, you can modify the data vendor settings in `tradingagents/default_config.py`.
+**Note:** We are happy to partner with Alpha Vantage to provide robust API support for TradingAgents. You can get a free AlphaVantage API [here](https://www.alphavantage.co/support/#api-key), TradingAgents-sourced requests also have increased rate limits to 60 requests per minute with no daily limits. Typically the quota is sufficient for performing complex tasks with TradingAgents thanks to Alpha Vantage's open-source support program. If you prefer to use OpenAI for these data sources instead, you can modify the data vendor settings in `tradingagents/default_config.py`.
+
+### Using DeepSeek LLM Provider
+
+TradingAgents now supports [DeepSeek](https://www.deepseek.com/) as an LLM provider, offering excellent Chinese language optimization and strong reasoning capabilities at a cost-effective price point.
+
+#### Quick Start with DeepSeek
+
+1. **Get API Key**: Sign up at [DeepSeek Platform](https://platform.deepseek.com/) and generate your API key
+
+2. **Configure Environment**: Add your API key to `.env` file
+   ```bash
+   DEEPSEEK_API_KEY=sk-your-deepseek-api-key-here
+   ```
+
+3. **Update Configuration**: Modify `tradingagents/default_config.py`
+   ```python
+   config = DEFAULT_CONFIG.copy()
+   config["llm_provider"] = "deepchat"
+   config["deep_think_llm"] = "deepseek-reasoner"  # For complex reasoning
+   config["quick_think_llm"] = "deepseek-chat"     # For quick responses
+   ```
+
+4. **Usage Example**:
+   ```python
+   from tradingagents.graph.trading_graph import TradingAgentsGraph
+   from tradingagents.default_config import DEFAULT_CONFIG
+
+   # Configure for DeepSeek
+   config = DEFAULT_CONFIG.copy()
+   config["llm_provider"] = "deepchat"
+   config["deep_think_llm"] = "deepseek-reasoner"
+   config["quick_think_llm"] = "deepseek-chat"
+
+   # Initialize with DeepSeek
+   ta = TradingAgentsGraph(debug=True, config=config)
+   _, decision = ta.propagate("NVDA", "2024-05-10")
+   print(decision)
+   ```
+
+#### Model Information
+
+- **deepseek-chat**: Optimized for Chinese language, fast response times, ideal for data analysis and routine tasks
+- **deepseek-reasoner**: Advanced reasoning capabilities, designed for complex strategy generation and multi-step decision making
+
+#### Troubleshooting
+
+- **Missing API Key**: Ensure `DEEPSEEK_API_KEY` is set in your `.env` file or environment variables
+- **Authentication Error**: Verify your API key is valid and not expired
+- **Model Not Found**: Check that model names in configuration match available DeepSeek models
+- **Installation**: Run `pip install langchain-deepseek` if you encounter import errors
+
+For more information, see the [DeepSeek API Documentation](https://api-docs.deepseek.com/).
 
 ### CLI Usage
 

@@ -13,6 +13,12 @@ DEFAULT_CONFIG = {
     "deep_think_llm": "o4-mini",
     "quick_think_llm": "gpt-4o-mini",
     "backend_url": "https://api.openai.com/v1",
+    # DeepSeek LLM settings (alternative provider)
+    # To use DeepSeek, set llm_provider to "deepchat" and provide DEEPSEEK_API_KEY in environment
+    # "llm_provider": "deepchat",
+    # "deep_think_llm": "deepseek-reasoner",
+    # "quick_think_llm": "deepseek-chat",
+    # "backend_url": "https://api.deepseek.com",  # Optional, uses default if not specified
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
