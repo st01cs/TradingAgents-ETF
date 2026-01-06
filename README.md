@@ -274,6 +274,90 @@ The system validates the embedding configuration on initialization and will rais
 
 For more details, see `tradingagents/agents/utils/memory.py`.
 
+### Akshare Configuration for Chinese Market Data
+
+TradingAgents supports Akshare as a data vendor for Chinese stock market data, including A-shares, Hong Kong stocks, and more.
+
+#### Installation
+
+Akshare is included in requirements.txt:
+```bash
+pip install -r requirements.txt
+```
+
+#### Configuration
+
+Set Akshare as the preferred vendor:
+
+```python
+from tradingagents.default_config import DEFAULT_CONFIG
+
+config = DEFAULT_CONFIG.copy()
+config["data_vendors"] = {
+    "core_stock_apis": "akshare",        # Use Akshare for stock prices
+    "technical_indicators": "akshare",    # Use Akshare for indicators
+    "fundamental_data": "akshare",        # Use Akshare for fundamentals
+    "news_data": "akshare"                # Use Akshare for news
+}
+```
+
+#### Stock Code Format
+
+Akshare uses market prefixes for Chinese stocks:
+- **Shanghai (沪市)**: `sh` + 6-digit code (e.g., `sh600000`)
+- **Shenzhen (深市)**: `sz` + 6-digit code (e.g., `sz000001`)
+- **Beijing (京市)**: `bj` + 6-digit code (e.g., `bj832566`)
+
+The system **automatically converts** 6-digit codes to Akshare format:
+- Input: `600000` → Converted to: `sh600000`
+- Input: `000001` → Converted to: `sz000001`
+- Input: `832566` → Converted to: `bj832566`
+
+You can use either format in your code - the conversion is handled automatically.
+
+#### Example Usage
+
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+# Configure for Chinese A-share market
+config = DEFAULT_CONFIG.copy()
+config["data_vendors"] = {
+    "core_stock_apis": "akshare",
+    "technical_indicators": "akshare",
+    "fundamental_data": "akshare",
+    "news_data": "akshare"
+}
+
+# Initialize with Akshare
+ta = TradingAgentsGraph(debug=True, config=config)
+
+# Analyze a Chinese stock (use 6-digit code)
+decision, _ = ta.propagate("000001", "2024-05-10")  # 平安银行
+print(decision)
+```
+
+#### Hybrid Configuration (Fallback)
+
+You can configure multiple vendors with automatic fallback:
+
+```python
+config["data_vendors"] = {
+    "core_stock_apis": "akshare, yfinance",  # Try Akshare first, fallback to yfinance
+    "news_data": "alpha_vantage, akshare"     # Try Alpha Vantage first, fallback to Akshare
+}
+```
+
+#### Supported Data Types
+
+- ✅ **Stock Price Data**: Historical OHLCV with forward/backward adjustment
+- ✅ **Technical Indicators**: MACD, RSI, moving averages, etc.
+- ✅ **Fundamental Data**: Balance sheet, cash flow, income statement
+- ✅ **News Data**: Aggregated from East Money, Sina Finance, Xueqiu
+
+For more details on Akshare's data coverage, see [Akshare Documentation](https://akshare.akfamily.xyz/).
+
 ### CLI Usage
 
 You can also try out the CLI directly by running:
