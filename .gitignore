@@ -10,3 +10,5 @@ eval_data/
 *.egg-info/
 .env
 .claude/
+worktree/
+.worktrees/
