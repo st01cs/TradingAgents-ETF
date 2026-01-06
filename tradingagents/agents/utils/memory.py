@@ -1,17 +1,84 @@
 import chromadb
+import logging
+import os
 from chromadb.config import Settings
 from openai import OpenAI
 
+logger = logging.getLogger(__name__)
+
 
 class FinancialSituationMemory:
+    """Memory system for storing and retrieving financial situations using embeddings.
+
+    This class uses ChromaDB for vector storage and an OpenAI-compatible embedding API
+    to generate embeddings for semantic search.
+
+    Configuration format:
+        config = {
+            "embedding": {
+                "endpoint": "https://api.openai.com/v1",  # Required: Complete URL
+                "model": "text-embedding-3-small",         # Required: Model name
+                "api_key": "sk-..."                        # Optional: API key (can use env var)
+            }
+        }
+
+    The api_key field can be set to None or an empty string. In that case, the system
+    will attempt to read from the EMBEDDING_API_KEY environment variable.
+
+    Args:
+        name: Name of the memory collection (e.g., 'bull_memory', 'trader_memory')
+        config: Configuration dictionary containing embedding settings
+
+    Raises:
+        ValueError: If embedding configuration is missing or invalid
+    """
+
     def __init__(self, name, config):
-        if config["backend_url"] == "http://localhost:11434/v1":
-            self.embedding = "nomic-embed-text"
-        else:
-            self.embedding = "text-embedding-3-small"
-        self.client = OpenAI(base_url=config["backend_url"])
+        # Validate and extract embedding configuration
+        if "embedding" not in config:
+            raise ValueError("Missing 'embedding' configuration")
+
+        embedding_config = config["embedding"]
+
+        # Validate required fields (except api_key which can use environment variable)
+        required_fields = ["endpoint", "model"]
+        for field in required_fields:
+            if field not in embedding_config:
+                raise ValueError(f"Missing required field '{field}' in embedding configuration")
+            if not embedding_config[field] or not isinstance(embedding_config[field], str):
+                raise ValueError(f"Field '{field}' must be a non-empty string")
+
+        # Handle api_key field - can be in config or environment variable
+        if "api_key" not in embedding_config:
+            embedding_config["api_key"] = None
+
+        api_key = embedding_config["api_key"]
+        # If api_key is None or empty string, try environment variable
+        if not api_key or not isinstance(api_key, str):
+            api_key = os.getenv("EMBEDDING_API_KEY")
+            if not api_key:
+                raise ValueError(
+                    "API key must be provided either in config['embedding']['api_key'] "
+                    "or through the EMBEDDING_API_KEY environment variable"
+                )
+
+        # Initialize embedding model and client
+        self.embedding = embedding_config["model"]
+        self.client = OpenAI(
+            base_url=embedding_config["endpoint"],
+            api_key=api_key
+        )
+
+        # Initialize ChromaDB
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         self.situation_collection = self.chroma_client.create_collection(name=name)
+
+        # Log configuration
+        logger.info(
+            f"Initialized memory '{name}' with embedding: "
+            f"endpoint={embedding_config['endpoint']}, "
+            f"model={embedding_config['model']}"
+        )
 
     def get_embedding(self, text):
         """Get OpenAI embedding for a text"""

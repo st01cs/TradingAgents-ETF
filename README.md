@@ -181,6 +181,99 @@ TradingAgents now supports [DeepSeek](https://www.deepseek.com/) as an LLM provi
 
 For more information, see the [DeepSeek API Documentation](https://api-docs.deepseek.com/).
 
+### Embedding Configuration
+
+TradingAgents uses embeddings for the memory system to store and retrieve financial situations. The embedding configuration is **required** and must be set up with three fields: `endpoint`, `model`, and `api_key`.
+
+#### Configuration Format
+
+Add the `embedding` section to your configuration:
+
+```python
+config = {
+    # ... other config ...
+    "embedding": {
+        "endpoint": "https://api.openai.com/v1",  # Complete API endpoint URL
+        "model": "text-embedding-3-small",         # Embedding model name
+        "api_key": "sk-your-api-key-here"         # API authentication key (optional, see below)
+    }
+}
+```
+
+#### Required Fields
+
+- **endpoint** (string): Complete URL of the embedding API endpoint (including `/v1` suffix if applicable)
+- **model** (string): Name of the embedding model to use
+- **api_key** (string, optional): API key for authentication. Can be provided in config or via `EMBEDDING_API_KEY` environment variable
+
+#### Example Configurations
+
+**OpenAI:**
+```python
+"embedding": {
+    "endpoint": "https://api.openai.com/v1",
+    "model": "text-embedding-3-small",
+    "api_key": "sk-proj-..."  # Your OpenAI API key
+}
+```
+
+**DeepSeek:**
+```python
+"embedding": {
+    "endpoint": "https://api.deepseek.com/v1",  # Adjust if different
+    "model": "deepseek-embedding",              # Use actual model name
+    "api_key": "sk-..."                         # Your DeepSeek API key
+}
+```
+
+**Ollama (Local):**
+```python
+"embedding": {
+    "endpoint": "http://localhost:11434/v1",
+    "model": "nomic-embed-text",
+    "api_key": "dummy-key"  # Required even for local providers
+}
+```
+
+#### Using Environment Variables
+
+Instead of hardcoding your API key in the configuration, you can use the `EMBEDDING_API_KEY` environment variable:
+
+```bash
+export EMBEDDING_API_KEY=sk-your-api-key-here
+```
+
+Then in your configuration:
+
+```python
+"embedding": {
+    "endpoint": "https://api.openai.com/v1",
+    "model": "text-embedding-3-small",
+    "api_key": None  # Will use EMBEDDING_API_KEY environment variable
+}
+```
+
+Or simply omit the `api_key` field:
+
+```python
+"embedding": {
+    "endpoint": "https://api.openai.com/v1",
+    "model": "text-embedding-3-small"
+    # api_key will be read from EMBEDDING_API_KEY environment variable
+}
+```
+
+**Priority**: If `api_key` is provided in the config, it takes precedence over the environment variable.
+
+#### Configuration Validation
+
+The system validates the embedding configuration on initialization and will raise a `ValueError` if:
+- The `embedding` key is missing from config
+- The `endpoint` or `model` fields are missing or empty
+- The API key is not provided in either the config or the `EMBEDDING_API_KEY` environment variable
+
+For more details, see `tradingagents/agents/utils/memory.py`.
+
 ### CLI Usage
 
 You can also try out the CLI directly by running:

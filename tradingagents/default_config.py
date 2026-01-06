@@ -19,6 +19,12 @@ DEFAULT_CONFIG = {
     # "deep_think_llm": "deepseek-reasoner",
     # "quick_think_llm": "deepseek-chat",
     # "backend_url": "https://api.deepseek.com",  # Optional, uses default if not specified
+    # Embedding settings for memory system
+    "embedding": {
+        "endpoint": "https://api.openai.com/v1",  # OpenAI-compatible API endpoint
+        "model": "text-embedding-3-small",         # Embedding model name
+        "api_key": None,                           # Users must override this with their API key
+    },
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
