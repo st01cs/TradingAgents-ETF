@@ -95,9 +95,9 @@ def convert_to_akshare_code(symbol: str) -> str:
 
 def get_akshare_stock(
     symbol: str,
-    period: str = "daily",
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    period: str = "daily",
     adjust: str = "qfq"
 ) -> str:
     """
@@ -105,10 +105,10 @@ def get_akshare_stock(
 
     Args:
         symbol: Stock symbol (6-digit code or Akshare format with prefix)
-        period: Time period (daily, weekly, monthly)
         start_date: Start date (YYYY-MM-DD)
         end_date: End date (YYYY-MM-DD)
-        adjust: Adjustment type - "qfq" (前复权), "hfq" (后复权), "" (不复权)
+        period: Time period (daily, weekly, monthly) - default "daily"
+        adjust: Adjustment type - default "qfq" (前复权)
 
     Returns:
         CSV-formatted string with OHLCV data
@@ -118,7 +118,7 @@ def get_akshare_stock(
         AkshareDataError: If data retrieval fails
 
     Example:
-        >>> get_akshare_stock("000001", "daily", "2023-01-01", "2023-12-31")
+        >>> get_akshare_stock("000001", "2023-01-01", "2023-12-31")
         '# Stock data for sz000001 from 2023-01-01 to 2023-12-31...'
     """
     try:
