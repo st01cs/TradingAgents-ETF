@@ -243,8 +243,10 @@ def get_akshare_indicators(
 
     Strategy:
     1. Fetch OHLCV data using get_akshare_stock()
-    2. Calculate indicators using stockstats library
-    3. Return formatted text summary with CSV data
+       - Returns CSV with metadata comments (lines starting with '#')
+    2. Parse CSV with pandas (comment='#' to skip metadata)
+    3. Calculate indicators using stockstats library
+    4. Return formatted text summary with CSV data
 
     Args:
         symbol: Stock symbol (6-digit code or akshare format)
@@ -257,7 +259,7 @@ def get_akshare_indicators(
 
     Raises:
         AkshareCodeError: If stock code is invalid
-        AkshareDataError: If data retrieval or calculation fails
+        AkshareDataError: If data retrieval or parsing fails
 
     Example:
         >>> get_akshare_indicators("600000", "rsi,macd", "2024-01-15", 30)
@@ -297,10 +299,20 @@ def get_akshare_indicators(
         )
 
         # Parse CSV data to DataFrame
+        # Note: get_akshare_stock() returns CSV with comment lines starting with '#'
+        # Use comment parameter to automatically skip these lines during parsing
         import io
-        df = pd.read_csv(io.StringIO(stock_data_csv))
+        try:
+            df = pd.read_csv(io.StringIO(stock_data_csv), comment='#')
+        except pd.errors.ParserError as e:
+            raise AkshareDataError(
+                f"Failed to parse stock data CSV. "
+                f"The CSV format may be invalid. Error: {e}"
+            )
+        except Exception as e:
+            raise AkshareDataError(f"Failed to parse stock data: {e}")
 
-        # Remove comment lines (starting with #)
+        # Remove comment lines (starting with #) - now redundant but kept for safety
         df = df[~df['Date'].astype(str).str.startswith('#')]
         df['Date'] = pd.to_datetime(df['Date'])
         df = df.sort_values('Date', ascending=True)
