@@ -67,6 +67,54 @@ class TestStockCodeConversion:
         assert convert_to_akshare_code("BJ832566") == "bj832566"
 
 
+class TestStockCodeConversionWithAddPrefix:
+    """Test stock code conversion with add_prefix parameter"""
+
+    def test_convert_no_prefix_shanghai(self):
+        """Test conversion without adding prefix for Shanghai stocks"""
+        assert convert_to_akshare_code("601939", add_prefix=False) == "601939"
+        assert convert_to_akshare_code("600000", add_prefix=False) == "600000"
+
+    def test_convert_no_prefix_shenzhen(self):
+        """Test conversion without adding prefix for Shenzhen stocks"""
+        assert convert_to_akshare_code("000001", add_prefix=False) == "000001"
+        assert convert_to_akshare_code("300750", add_prefix=False) == "300750"
+
+    def test_convert_no_prefix_beijing(self):
+        """Test conversion without adding prefix for Beijing stocks"""
+        assert convert_to_akshare_code("832566", add_prefix=False) == "832566"
+        assert convert_to_akshare_code("430047", add_prefix=False) == "430047"
+
+    def test_convert_default_adds_prefix(self):
+        """Test default behavior adds prefix (backward compatibility)"""
+        assert convert_to_akshare_code("601939") == "sh601939"
+        assert convert_to_akshare_code("000001") == "sz000001"
+        assert convert_to_akshare_code("300750") == "sz300750"
+
+    def test_convert_add_prefix_true(self):
+        """Test explicit add_prefix=True adds prefix"""
+        assert convert_to_akshare_code("601939", add_prefix=True) == "sh601939"
+        assert convert_to_akshare_code("000001", add_prefix=True) == "sz000001"
+
+    def test_strip_existing_prefix_with_false(self):
+        """Test that add_prefix=False strips existing prefix"""
+        assert convert_to_akshare_code("sh601939", add_prefix=False) == "601939"
+        assert convert_to_akshare_code("sz000001", add_prefix=False) == "000001"
+        assert convert_to_akshare_code("bj832566", add_prefix=False) == "832566"
+
+    def test_preserve_existing_prefix_default(self):
+        """Test that default behavior preserves existing prefix"""
+        assert convert_to_akshare_code("sh601939") == "sh601939"
+        assert convert_to_akshare_code("sz000001") == "sz000001"
+
+    def test_empty_code_with_add_prefix(self):
+        """Test empty code raises error even with add_prefix parameter"""
+        with pytest.raises(AkshareCodeError):
+            convert_to_akshare_code("", add_prefix=False)
+        with pytest.raises(AkshareCodeError):
+            convert_to_akshare_code("", add_prefix=True)
+
+
 class TestAkshareStockData:
     """Test Akshare stock data retrieval"""
 
