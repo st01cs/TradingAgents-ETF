@@ -45,7 +45,7 @@ class AkshareCodeError(AkshareError):
 # Stock Code Conversion
 # ============================================================================
 
-def convert_to_akshare_code(symbol: str) -> str:
+def convert_to_akshare_code(symbol: str, add_prefix: Optional[bool] = None) -> str:
     """
     Convert stock symbol to Akshare format.
 
@@ -53,29 +53,66 @@ def convert_to_akshare_code(symbol: str) -> str:
     - 6xxxxx → shXXXXXX (Shanghai)
     - 0xxxxx, 3xxxxx → szXXXXXX (Shenzhen)
     - 8xxxxx, 4xxxxx → bjXXXXXX (Beijing)
-    - Already has prefix → return as-is
+    - Already has prefix → return as-is (or strip if add_prefix=False)
 
     Args:
         symbol: Stock symbol (6-digit code or Akshare format with prefix)
+        add_prefix: Whether to add market prefix
+            - None (default): Add prefix for backward compatibility
+            - True: Force add prefix
+            - False: Return plain 6-digit code
 
     Returns:
         Akshare-formatted stock symbol
 
+    API Format Requirements:
+        Different Akshare APIs have different code format requirements:
+        - stock_zh_a_hist: Requires NO prefix (use add_prefix=False)
+        - stock_individual_info_em: Requires NO prefix (use add_prefix=False)
+        - stock_cash_flow_sheet_by_quarterly_em: Requires prefix (default)
+        - stock_profit_sheet_by_quarterly_em: Requires prefix (default)
+        - stock_news_em: Requires prefix (default)
+        - stock_balance_sheet_by_quarterly_em: Requires prefix (default)
+
     Examples:
         >>> convert_to_akshare_code("600000")
         'sh600000'
+        >>> convert_to_akshare_code("600000", add_prefix=False)
+        '600000'
         >>> convert_to_akshare_code("000001")
         'sz000001'
         >>> convert_to_akshare_code("sh600000")
         'sh600000'
+        >>> convert_to_akshare_code("sh600000", add_prefix=False)
+        '600000'
     """
     if not symbol:
         raise AkshareCodeError("Stock symbol cannot be empty")
 
-    # If already has prefix, return as-is
+    # If add_prefix=False and symbol already has prefix, strip it
+    if add_prefix is False and symbol[:2].lower() in ['sh', 'sz', 'bj', 'hk', 'us']:
+        logger.warning(
+            f"Symbol '{symbol}' already has prefix but add_prefix=False specified. "
+            f"Stripping prefix to return plain code."
+        )
+        # For 8-character codes with prefix (e.g., "sh600000"), return last 6 digits
+        if len(symbol) == 8:
+            return symbol[2:].lower()
+        # For other formats, return as-is
+        return symbol.lower()
+
+    # If already has prefix and we're not forcing to remove it, return as-is
     if symbol[:2].lower() in ['sh', 'sz', 'bj', 'hk', 'us']:
         return symbol.lower()
 
+    # When add_prefix=False, return plain 6-digit code without prefix
+    if add_prefix is False:
+        if len(symbol) == 6 and symbol.isdigit():
+            return symbol.lower()
+        # Return original if not a 6-digit code
+        return symbol.lower()
+
+    # Default behavior (add_prefix=True or add_prefix=None): Add prefix
     # Convert 6-digit codes
     if len(symbol) == 6 and symbol.isdigit():
         if symbol.startswith('6'):
@@ -125,8 +162,14 @@ def get_akshare_stock(
         logger.info(f"Akshare: Fetching stock data for {symbol}, period={period}")
 
         # Convert symbol to Akshare format
-        akshare_symbol = convert_to_akshare_code(symbol)
+        # NOTE: stock_zh_a_hist requires plain 6-digit code WITHOUT prefix
+        # Using add_prefix=False to return "601939" instead of "sh601939"
+        akshare_symbol = convert_to_akshare_code(symbol, add_prefix=False)
         logger.debug(f"Converted symbol: {symbol} -> {akshare_symbol}")
+
+        # Assert format: should be plain 6-digit code for stock_zh_a_hist
+        assert len(akshare_symbol) == 6 and akshare_symbol.isdigit(), \
+            f"stock_zh_a_hist requires plain 6-digit code, got: {akshare_symbol}"
 
         # Convert date format from YYYY-MM-DD to YYYYMMDD for Akshare
         start_date_ak = start_date.replace("-", "") if start_date else "19900101"
@@ -327,6 +370,7 @@ def get_akshare_news(
     try:
         logger.info(f"Akshare: Fetching news for {symbol}")
 
+        # NOTE: stock_news_em requires prefix (default behavior)
         akshare_symbol = convert_to_akshare_code(symbol)
         all_news = []
 
@@ -426,12 +470,14 @@ def get_akshare_fundamentals(
     try:
         logger.info(f"Akshare: Fetching fundamentals for {symbol}")
 
-        akshare_symbol = convert_to_akshare_code(symbol)
+        # NOTE: stock_individual_info_em requires plain 6-digit code WITHOUT prefix
+        akshare_symbol = convert_to_akshare_code(symbol, add_prefix=False)
 
         # Get company info
         company_info = ak.stock_individual_info_em(symbol=akshare_symbol)
 
         # Get financial indicators
+        # NOTE: stock_financial_analysis_indicator also requires plain code
         indicators = ak.stock_financial_analysis_indicator(symbol=akshare_symbol)
 
         # Build summary
@@ -484,6 +530,8 @@ def get_akshare_balance_sheet(
     try:
         logger.info(f"Akshare: Fetching balance sheet for {symbol}, freq={freq}")
 
+        # NOTE: Using default (add prefix) as API format requirement unclear
+        # May need adjustment based on further testing
         akshare_symbol = convert_to_akshare_code(symbol)
 
         # Fetch balance sheet data
@@ -526,6 +574,7 @@ def get_akshare_cashflow(
     try:
         logger.info(f"Akshare: Fetching cash flow statement for {symbol}, freq={freq}")
 
+        # NOTE: stock_cash_flow_sheet_by_quarterly_em requires prefix (default behavior)
         akshare_symbol = convert_to_akshare_code(symbol)
 
         # Fetch cash flow data
@@ -568,6 +617,7 @@ def get_akshare_income_statement(
     try:
         logger.info(f"Akshare: Fetching income statement for {symbol}, freq={freq}")
 
+        # NOTE: stock_profit_sheet_by_quarterly_em requires prefix (default behavior)
         akshare_symbol = convert_to_akshare_code(symbol)
 
         # Fetch income statement data
