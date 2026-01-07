@@ -266,3 +266,104 @@ class TestIndicatorMapping:
         for key, value in IndicatorCalculator.INDICATOR_MAP.items():
             assert isinstance(value, str)
             assert len(value) > 0
+
+
+class TestCSVParsing:
+    """Test CSV parsing with comment lines (bug fix #003)."""
+
+    def test_parse_csv_with_comment_lines(self):
+        """Test that CSV with comment lines is parsed correctly."""
+        import io
+
+        # Mock CSV with comment lines (as returned by get_akshare_stock)
+        mock_csv = """# Stock data for 601939 from 2025-04-10 to 2025-05-10
+# Total records: 19
+# Adjustment: qfq
+# Data retrieved on: 2026-01-07 11:28:19
+
+,Date,股票代码,Open,Close,High,Low,Volume,Amount
+0,2025-04-10,601939,8.43,8.35,8.43,8.31,1250340,1090796889.0
+1,2025-04-11,601939,8.36,8.4,8.4,8.29,1138682,994582346.0
+"""
+
+        # Parse with comment parameter
+        df = pd.read_csv(io.StringIO(mock_csv), comment='#')
+
+        # Verify parsing succeeded
+        assert len(df) == 2
+        assert 'Date' in df.columns
+        assert 'Close' in df.columns
+        assert df.iloc[0]['Close'] == 8.35
+
+    def test_parse_csv_without_comment_lines(self):
+        """Test that CSV without comment lines still works."""
+        import io
+
+        # Mock CSV without comment lines
+        mock_csv = """,Date,Open,Close
+0,2025-04-10,8.43,8.35
+1,2025-04-11,8.36,8.4
+"""
+
+        # Parse with comment parameter (should still work)
+        df = pd.read_csv(io.StringIO(mock_csv), comment='#')
+
+        # Verify parsing succeeded
+        assert len(df) == 2
+        assert df.iloc[0]['Close'] == 8.35
+
+    def test_parse_csv_empty_data(self):
+        """Test handling of empty CSV."""
+        import io
+
+        # Mock CSV with only comments
+        mock_csv = """# Stock data for 601939
+# No data available
+"""
+
+        # Parse with comment parameter - should raise EmptyDataError
+        with pytest.raises(pd.errors.EmptyDataError):
+            df = pd.read_csv(io.StringIO(mock_csv), comment='#')
+
+
+class TestMACDIndicator:
+    """Integration tests for MACD indicator (bug fix #003)."""
+
+    @pytest.mark.integration
+    def test_get_akshare_indicators_macd_original_bug(self):
+        """Test the exact scenario from bug report #003."""
+        # Use exact parameters from bug report
+        result = get_akshare_indicators(
+            symbol="601939",
+            indicator="macd",
+            curr_date="2025-05-10",
+            look_back_days=30
+        )
+
+        # Should not raise parsing error
+        assert isinstance(result, str)
+        # Should contain indicator results
+        assert "Technical Indicators" in result or "MACD" in result.upper()
+
+    @pytest.mark.integration
+    def test_get_akshare_indicators_other_indicators(self):
+        """Verify other indicators (RSI, Bollinger Bands) still work."""
+        # Test RSI
+        result_rsi = get_akshare_indicators(
+            symbol="601939",
+            indicator="rsi",
+            curr_date="2025-05-10",
+            look_back_days=30
+        )
+        assert isinstance(result_rsi, str)
+        assert "Technical Indicators" in result_rsi or "RSI" in result_rsi.upper()
+
+        # Test Bollinger Bands
+        result_bb = get_akshare_indicators(
+            symbol="601939",
+            indicator="bollinger",
+            curr_date="2025-05-10",
+            look_back_days=30
+        )
+        assert isinstance(result_bb, str)
+        assert "Technical Indicators" in result_bb or "BOLLINGER" in result_bb.upper()
