@@ -1,5 +1,6 @@
 import time
 import json
+from tradingagents.agents.utils.agent_utils import load_prompt_template
 
 
 def create_research_manager(llm, memory):
@@ -19,37 +20,32 @@ def create_research_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        # Load prompt from external file (supports multi-language)
+        # Note: Uses existing load_prompt_template() infrastructure
+        prompt_template = load_prompt_template('research_manager')
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
-
-Additionally, develop a detailed investment plan for the trader. This should include:
-
-Your Recommendation: A decisive stance supported by the most convincing arguments.
-Rationale: An explanation of why these arguments lead to your conclusion.
-Strategic Actions: Concrete steps for implementing the recommendation.
-Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
-
-Here are your past reflections on mistakes:
-\"{past_memory_str}\"
-
-Here is the debate:
-Debate History:
-{history}"""
+        # Substitute variables
+        prompt = prompt_template.format(
+            history=history,
+            past_memory_str=past_memory_str
+        )
         response = llm.invoke(prompt)
 
+        # Chinese output prefix (research director)
+        decision = f"研究总监：{response.content}"
+
         new_investment_debate_state = {
-            "judge_decision": response.content,
+            "judge_decision": decision,
             "history": investment_debate_state.get("history", ""),
             "bear_history": investment_debate_state.get("bear_history", ""),
             "bull_history": investment_debate_state.get("bull_history", ""),
-            "current_response": response.content,
+            "current_response": decision,
             "count": investment_debate_state["count"],
         }
 
         return {
             "investment_debate_state": new_investment_debate_state,
-            "investment_plan": response.content,
+            "investment_plan": decision,
         }
 
     return research_manager_node
