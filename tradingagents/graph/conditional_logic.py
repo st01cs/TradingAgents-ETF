@@ -1,6 +1,10 @@
 # TradingAgents/graph/conditional_logic.py
 
+import logging
+
 from tradingagents.agents.utils.agent_states import AgentState
+
+logger = logging.getLogger(__name__)
 
 
 class ConditionalLogic:
@@ -44,15 +48,30 @@ class ConditionalLogic:
         return "Msg Clear Fundamentals"
 
     def should_continue_debate(self, state: AgentState) -> str:
-        """Determine if debate should continue."""
+        """Determine if debate should continue based on latest_speaker field."""
 
         if (
             state["investment_debate_state"]["count"] >= 2 * self.max_debate_rounds
-        ):  # 3 rounds of back-and-forth between 2 agents
+        ):  # 2 rounds of back-and-forth between 2 agents
+            logger.debug(f"Debate ended: count {state['investment_debate_state']['count']} reached limit")
             return "Research Manager"
-        if state["investment_debate_state"]["current_response"].startswith("Bull"):
+
+        latest_speaker = state["investment_debate_state"]["latest_speaker"]
+
+        # Route based on explicit state field, not string prefix parsing
+        if latest_speaker == "Bull":
+            logger.debug("Routing: Bull → Bear Researcher")
             return "Bear Researcher"
-        return "Bull Researcher"
+        elif latest_speaker == "Bear":
+            logger.debug("Routing: Bear → Bull Researcher")
+            return "Bull Researcher"
+        else:
+            # Fail fast with clear error message
+            raise ValueError(
+                f"Invalid latest_speaker value: '{latest_speaker}'. "
+                f"Expected 'Bull' or 'Bear'. "
+                f"Full investment_debate_state: {state['investment_debate_state']}"
+            )
 
     def should_continue_risk_analysis(self, state: AgentState) -> str:
         """Determine if risk analysis should continue."""

@@ -24,7 +24,12 @@ class Propagator:
             "company_of_interest": company_name,
             "trade_date": str(trade_date),
             "investment_debate_state": InvestDebateState(
-                {"history": "", "current_response": "", "count": 0}
+                {
+                    "history": "",
+                    "current_response": "",
+                    "count": 0,
+                    "latest_speaker": "Bull"
+                }
             ),
             "risk_debate_state": RiskDebateState(
                 {

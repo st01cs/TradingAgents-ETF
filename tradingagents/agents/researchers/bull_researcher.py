@@ -49,6 +49,7 @@ def create_bull_researcher(llm, memory):
             "bear_history": investment_debate_state.get("bear_history", ""),
             "current_response": argument,
             "count": investment_debate_state["count"] + 1,
+            "latest_speaker": "Bull",  # Set routing state
         }
 
         return {"investment_debate_state": new_investment_debate_state}

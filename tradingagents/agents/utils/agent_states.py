@@ -19,6 +19,7 @@ class InvestDebateState(TypedDict):
     current_response: Annotated[str, "Latest response"]  # Last response
     judge_decision: Annotated[str, "Final judge decision"]  # Last response
     count: Annotated[int, "Length of the current conversation"]  # Conversation length
+    latest_speaker: Annotated[str, "Latest speaker in debate ('Bull' or 'Bear')"]
 
 
 # Risk management team state
